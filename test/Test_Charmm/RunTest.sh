@@ -4,7 +4,8 @@
 
 CleanFiles charmm.in test.ala3.pdb.? test.ala3.pdb.10 first.ala3.crd \
            test.psf test.ala3.dcd second.ala3.crd strip.chamber.parm7 \
-           run0.res_0.mol2 cpptraj.psf cpptraj.cor ala3.drude.mol2
+           run0.res_0.mol2 cpptraj.psf cpptraj.cor ala3.drude.mol2 \
+           acemd.atoms.dat acemd.res.dat vmd8.atoms.dat vmd8.res.dat
 
 TESTNAME='Charmm DCD tests'
 Requires maxthreads 10
@@ -99,6 +100,31 @@ EOF
   RunCpptraj "$UNITNAME"
   DoTest ala3.drude.mol2 ala3.drude.mol2.save
 fi
+
+# Atom lines with 8 columns come in two layouts; both must read correctly.
+# CHARMM without the Constrained column (written e.g. by ACEMD):
+#   AtomID SegID ResID ResName AtomName AtomType Charge Mass
+UNITNAME='CHARMM PSF, 8 columns: SegID, no Constrained (ACEMD)'
+cat > charmm.in <<EOF
+parm acemd.psf
+atominfo * out acemd.atoms.dat
+resinfo * out acemd.res.dat
+EOF
+RunCpptraj "$UNITNAME"
+DoTest acemd.atoms.dat.save acemd.atoms.dat
+DoTest acemd.res.dat.save acemd.res.dat
+
+# VMD-like, no SegID:
+#   AtomID ResID ResName AtomName AtomType Charge Mass Constrained
+UNITNAME='CHARMM PSF, 8 columns: no SegID, Constrained (VMD-like)'
+cat > charmm.in <<EOF
+parm vmd8.psf
+atominfo * out vmd8.atoms.dat
+resinfo * out vmd8.res.dat
+EOF
+RunCpptraj "$UNITNAME"
+DoTest vmd8.atoms.dat.save vmd8.atoms.dat
+DoTest vmd8.res.dat.save vmd8.res.dat
 
 EndTest
 
