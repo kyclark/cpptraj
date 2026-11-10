@@ -1,0 +1,6 @@
+#Atom Name  #Res Name  #Mol Type   Charge     Mass GBradius El
+    1 CAY      1 LYS      1 CT3   -0.2700  12.0110   0.0000  C
+    2 HY1      1 LYS      1 HA     0.0900   1.0080   0.0000  H
+    3 N        1 LYS      1 NH1   -0.4700  14.0070   0.0000  N
+    4 N        2 ALA      1 NH1   -0.4700  14.0070   0.0000  N
+    5 OH2      3 TIP3     2 OT    -0.8340  15.9994   0.0000  O

@@ -328,6 +328,18 @@ int Parm_CharmmPsf::ParseResID(char& psficode, const char* psfresid)
   return resnum;
 }
 
+/** \return true if the string is an optionally signed integer, i.e. digits
+  *         only, with no decimal point or exponent.
+  */
+bool Parm_CharmmPsf::TokenIsInteger(const char* tok) {
+  if (tok == 0) return false;
+  const char* ptr = tok;
+  if (*ptr == '+' || *ptr == '-') ++ptr;
+  if (!isdigit(*ptr)) return false;
+  while (isdigit(*ptr)) ++ptr;
+  return (*ptr == '\0');
+}
+
 // Parm_CharmmPsf::ReadParm()
 /** Open the Charmm PSF file specified by filename and set up topology data.
   * Mask selection requires natom, nres, names, resnames, resnums.
@@ -394,8 +406,23 @@ int Parm_CharmmPsf::ReadParm(FileName const& fname, Topology &parmOut) {
       if (ntokens < 9) {
         mprintf("Warning: PSF has non-standard format; atoms line contains less than 11 columns (%i).\n", ntokens);
         if (ntokens == 8) {
-          mprintf("Warning: 8 columns in atoms line; assuming VMD or similarly formatted PSF.\n");
-          psfFormatType = T_VMD;
+          // Two different 8-column layouts are seen in practice:
+          //   VMD-like, no SegID:   AtomID ResID ResName AtomName AtomType Charge Mass Constrained
+          //   CHARMM, no Constrained column (e.g. written by ACEMD):
+          //                         AtomID SegID ResID ResName AtomName AtomType Charge Mass
+          // The last column tells them apart: the constraint flag is an
+          // integer, while the mass is a real number with a decimal point.
+          char lastcol[32];
+          lastcol[0] = '\0';
+          sscanf(buffer, "%*s %*s %*s %*s %*s %*s %*s %31s", lastcol);
+          if (TokenIsInteger(lastcol)) {
+            mprintf("Warning: 8 columns in atoms line and the last is an integer; assuming VMD or\n"
+                    "Warning:   similarly formatted PSF (no segment ID column).\n");
+            psfFormatType = T_VMD;
+          } else {
+            mprintf("Warning: 8 columns in atoms line and the last is not an integer; assuming\n"
+                    "Warning:   CHARMM format without the constraint column (e.g. ACEMD).\n");
+          }
         } else {
           mprinterr("Error: Unrecognized number of columns in atoms line (%i); PSF has bad format.\n", ntokens);
           return 1;
